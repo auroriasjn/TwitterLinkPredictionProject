@@ -1,13 +1,24 @@
-torch
 numpy
 pandas
 matplotlib
 scikit-learn
+tqdm
 click
-notebook
+
+# PyTorch Core
+torch
+lightning
+
+# PyTorch Geometric Suite
 torch-geometric
 torch-scatter
 torch-sparse
-lightning
+torch-cluster
+
+# Graph Analysis & Visualization
+networkx
+scipy
+
+# Jupyter Environment
+notebook
 ipykernel
-tqdm
