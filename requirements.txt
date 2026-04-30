@@ -1,0 +1,12 @@
+torch
+numpy
+pandas
+matplotlib
+scikit-learn
+click
+notebook
+torch-geometric
+torch-scatter
+torch-sparse
+lightning
+tqdm

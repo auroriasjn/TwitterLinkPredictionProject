@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# png files
+*.png
+
 # Distribution / packaging
 .Python
 build/
@@ -50,6 +53,11 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+
+# lighting logs
+lightning_logs/
+cpsc483_final_project.egg-info/
+checkpoints/
 
 # Translations
 *.mo
