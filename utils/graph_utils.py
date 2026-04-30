@@ -13,7 +13,6 @@ def create_hetero_graph(activity_data: pd.DataFrame, follow_data: pd.DataFrame):
     num_users = int(max_user_id) + 1
     data['user'].num_nodes = num_users
 
-    # 1. Add Edges (same as your original code)
     fl_edges = torch.tensor(follow_data[['userA', 'userB']].values.T, dtype=torch.long)
     data['user', 'FL', 'user'].edge_index = fl_edges
     data['user', 'FL', 'user'].time = torch.zeros(fl_edges.size(1), dtype=torch.long)
@@ -26,9 +25,6 @@ def create_hetero_graph(activity_data: pd.DataFrame, follow_data: pd.DataFrame):
             data['user', edge_type, 'user'].edge_index = edges
             data['user', edge_type, 'user'].time = timestamps
 
-    # ---------------------------------------------------------
-    # NEW: Calculate Structural Features (Degree Centrality)
-    # ---------------------------------------------------------
     all_sources = []
     all_targets = []
     
@@ -43,12 +39,10 @@ def create_hetero_graph(activity_data: pd.DataFrame, follow_data: pd.DataFrame):
     # Calculate out-degree (how active they are) and in-degree (how popular they are)
     out_degree = degree(all_sources, num_nodes=num_users).view(-1, 1)
     in_degree = degree(all_targets, num_nodes=num_users).view(-1, 1)
-
-    # Apply Log1p (log(1 + x)) to squash massive influencer numbers into a healthy range
     out_degree_norm = torch.log1p(out_degree)
     in_degree_norm = torch.log1p(in_degree)
 
-    # Attach the 2-dimensional structural feature to the nodes
-    data['user'].x = torch.cat([out_degree_norm, in_degree_norm], dim=-1) # Shape: [num_users, 2]
+    # Class: concat new features
+    data['user'].x = torch.cat([out_degree_norm, in_degree_norm], dim=-1)
 
     return data
