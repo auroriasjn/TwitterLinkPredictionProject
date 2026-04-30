@@ -3,7 +3,8 @@ import torch
 from torchmetrics.classification import (
     MulticlassAUROC, BinaryAUROC, 
     MulticlassAccuracy, BinaryAccuracy,
-    MulticlassAveragePrecision, BinaryAveragePrecision
+    MulticlassAveragePrecision, BinaryAveragePrecision,
+    MulticlassRecall, BinaryRecall
 )
 
 INTERACTION_DICT = {
@@ -28,12 +29,14 @@ class LinkPredictionGNN(pl.LightningModule):
             self.val_auroc = MulticlassAUROC(num_classes=num_classes)
             self.val_acc = MulticlassAccuracy(num_classes=num_classes)
             self.val_ap = MulticlassAveragePrecision(num_classes=num_classes)
+            self.val_recall = MulticlassRecall(num_classes=num_classes) # <--- ADDED
         else:
             self.criterion = torch.nn.BCEWithLogitsLoss()
             # Binary metrics
             self.val_auroc = BinaryAUROC()
             self.val_acc = BinaryAccuracy()
             self.val_ap = BinaryAveragePrecision()
+            self.val_recall = BinaryRecall()
 
     def forward(self, batch):
         return self.model(batch, self.target_edge)
@@ -87,6 +90,7 @@ class LinkPredictionGNN(pl.LightningModule):
         self.val_auroc.update(probs, metric_targets)
         self.val_acc.update(probs, metric_targets)
         self.val_ap.update(probs, metric_targets)
+        self.val_recall.update(probs, metric_targets)
             
         return loss
 
@@ -94,15 +98,18 @@ class LinkPredictionGNN(pl.LightningModule):
         val_auroc = self.val_auroc.compute()
         val_acc = self.val_acc.compute()
         val_ap = self.val_ap.compute()
+        val_recall = self.val_recall.compute()
 
         self.log('val_auroc', val_auroc, prog_bar=True)
         self.log('val_acc', val_acc, prog_bar=True)
         self.log('val_ap', val_ap, prog_bar=True)
+        self.log('val_recall', val_recall, prog_bar=True)
 
         # Reset for next epoch
         self.val_auroc.reset()
         self.val_acc.reset()
         self.val_ap.reset()
+        self.val_recall.reset()
 
     def configure_optimizers(self):
         # Separate the model parameters into two groups.

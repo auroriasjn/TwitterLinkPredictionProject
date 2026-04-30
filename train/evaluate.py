@@ -2,8 +2,9 @@ import click
 import pandas as pd
 import torch
 import torch.nn as nn
+import numpy as np
 from tqdm import tqdm
-from sklearn.metrics import roc_auc_score, average_precision_score
+from sklearn.metrics import roc_auc_score, average_precision_score, recall_score
 from torch_geometric.explain import (
     Explainer, CaptumExplainer, fidelity, ModelConfig
 )
@@ -178,26 +179,13 @@ def evaluate(checkpoint_path, model_name, target_interaction, activity_data_path
                         mask = (mask - mask_min) / (mask_max - mask_min + 1e-10)
                     explanation[n_type].node_mask = mask
 
-            # --- Conditional Visualization (Only first N batches) ---
-            if i < visualize_limit:
-                filename = f"explained_captum_subgraph_batch_{i}_{model_name}.png"
-                explanation.visualize_graph(filename)
-
             # --- Compatibility Fixes for Fidelity ---
-            # --- RESTORED Compatibility Fixes for Fidelity ---
             explainer_model.fallback_edge_label_index = target_edge_labels
             explanation._model_args = [] 
-            
-            # 1. THE FIX: Bypass PyG's broken .collect() magic. 
-            # Directly assign the dictionaries we built earlier in the loop!
             explanation.x = base_x_dict
             explanation.edge_index = batch.edge_index_dict
-            
-            # 2. Collect Node Masks (We know this works because we normalized them above)
             explanation.node_mask = HeteroMaskDict(explanation.collect('node_mask'))
-            
-            # 3. SAFETY NET: If IntegratedGradients failed to compute continuous 
-            # derivatives for the discrete edges, do not crash. Just pass.
+
             try:
                 explanation.edge_mask = HeteroMaskDict(explanation.collect('edge_mask'))
             except KeyError:
@@ -208,18 +196,22 @@ def evaluate(checkpoint_path, model_name, target_interaction, activity_data_path
             total_fid_plus += fid_plus
             total_fid_minus += fid_minus
             explained_count += 1
-            total_fid_plus += fid_plus
-            total_fid_minus += fid_minus
-            explained_count += 1
                 
     avg_loss = total_loss / len(all_targets)
     auroc = roc_auc_score(all_targets, all_preds)
     ap = average_precision_score(all_targets, all_preds)
-
+    
+    # --- THE FIX ---
+    all_preds_binary = (np.array(all_preds) > 0.5).astype(int)
+    
+    # Calculate recall using the binarized predictions
+    recall = recall_score(all_targets, all_preds_binary)
+    
     print(f"\n--- Standard Metrics ---")
-    print(f"Loss:  {avg_loss:.4f}")
-    print(f"AUROC: {auroc:.4f}")
-    print(f"AP:    {ap:.4f}")
+    print(f"Loss:   {avg_loss:.4f}")
+    print(f"AUROC:  {auroc:.4f}")
+    print(f"AP:     {ap:.4f}")
+    print(f"Recall: {recall:.4f}")
 
     if explained_count > 0:
         avg_fid_plus = total_fid_plus / explained_count
