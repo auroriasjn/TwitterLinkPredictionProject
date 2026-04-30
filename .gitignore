@@ -58,6 +58,7 @@ cover/
 lightning_logs/
 cpsc483_final_project.egg-info/
 checkpoints/
+checkpoints_*/
 
 # Translations
 *.mo
